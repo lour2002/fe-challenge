@@ -6,25 +6,49 @@
 
 (enable-console-print!)
 
+(def img_url "https://kasta.ua/imgw/loc/640x352/")
+
+
+
+
 (go 
   (let [response (<! (http/get "/api/campaigns" {:with-credentials? false}))]
-      (def tagsList (:menu (:body response)))
+      (let [ { menu :menu, items :items } (:body response)]
+        (def tag_list menu)
+        (def campaigns items)
+      )
   )
 )
 
 (rum/defc tagItem
   [data]
-  [:div {:key (get data :url)}(get data :name)]
-  )
-
-(rum/defc Root []
-  [:div {:class "container"} 
-    (mapv tagItem tagsList) 
+  [:div {:key (get data :url)} 
+    [:span (get data :name)]
   ]
 )
 
+(rum/defc campaignItem
+  [data]
+  [:div {:key (get data :id)}
+    [:img {:src (str img_url (get data :now_image))}]
+  ]
+)
+
+(rum/defc Root []
+  [:div {:class "container"} 
+    (mapv tagItem tag_list) 
+    (mapv campaignItem campaigns) 
+  ]
+)
 
 (defn ^:export trigger-render []
-  (rum/mount (Root) (js/document.getElementById "content")))
+  (rum/mount (Root) (js/document.getElementById "content"))
+) 
+
+
+
+
+
+
 
 
