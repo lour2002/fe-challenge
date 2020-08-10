@@ -11,14 +11,42 @@ body {
 .container {
   width: 100%;
   max-width: 1300px;
+  margin: 0 auto;
 }
 
-button {
-  margin-right: 10px;
-  padding: 5px 10px;
-  text-transform: uppercase;
-  border: 1px solid #cfd2d6;
-  border-radius: 3px;
-  background: #2d2d2d;
-  color: #cfd2d6;
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+
+  &__item{
+    box-sizing: border-box;
+    flex: 0 1 calc(33% - 2rem);
+    margin: 1rem;
+    padding: 5px 10px;
+    text-transform: uppercase;
+    border: 1px solid #cfd2d6;
+    border-radius: 3px;
+    background: #2d2d2d;
+    color: #cfd2d6;
+    margin: 1rem;
+    cursor: pointer;
+
+    &.--active {
+      border: 1px solid #01ae96;
+      color: #01ae96;
+    }
+  }
+}
+
+.campaigns-list {
+  display: flex;
+  flex-wrap: wrap;
+
+  &__item{
+    box-sizing: border-box;
+    padding: 1rem;
+    flex: 0 1 50%;
+    img {width: 100%;}
+  }
 }
