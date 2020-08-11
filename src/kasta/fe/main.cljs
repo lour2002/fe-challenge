@@ -31,7 +31,11 @@
   (let [response (<! (http/get "/api/campaigns" {:with-credentials? false}))]
       (let [{menu :menu, items :items} (:body response)
             filterd-items (filter is-actual items)
-            active-tags (set (reduce (fn [acc camp] (concat acc (apply vector (camp :tags)))) [] filterd-items))]
+            active-tags (set (reduce 
+                                (fn [acc camp] 
+                                  (concat acc (apply vector (camp :tags)))) 
+                                [] 
+                                filterd-items))]
         
         (def campaigns-all filterd-items)
 
@@ -43,17 +47,16 @@
 (add-watch filter-tags :logger 
   (fn [& params]
     (let [ tags-list (nth params 3) ]
-      (println @campaigns)
       (reset! campaigns (filter (has-tags (set tags-list) :tags) campaigns-all)))))
 
 ;; Components
 (rum/defc TagItem  < rum/reactive [data]
   (let [ { tag :tag, name :name } data]
-    [:div { :key (get data :url) 
-            :class ["tag-list__item" (if (= (rum/react filter-tags) tag) "--active")] 
-            :on-click #(reset! filter-tags tag)} 
+    [:div { :key      (get data :url) 
+            :class    ["tag-list__item" (if (= (rum/react filter-tags) tag) "--active")] 
+            :on-click #(reset! filter-tags tag)}
 
-      name]))
+          name]))
 
 (rum/defc TagList < rum/reactive []
   [:div {:class "tag-list"}
@@ -61,7 +64,7 @@
 
 
 (rum/defc СampaignItem [data]
-  [:div { :key (get data :id)
+  [:div { :key   (get data :id)
           :class "campaigns-list__item"}
           
     [:img { :src (str img-url (get data :now_image))}]])
