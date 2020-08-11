@@ -16,42 +16,34 @@
 
 ;; Check if tags-list contains values from another list
 (defn has-tags [tags-list key]
-  (fn [item] 
-    (some (fn [tag] (contains? tags-list tag)) (apply vector (get item key)))))
+        (fn [item] 
+          (some (fn [tag] (contains? tags-list tag)) (apply vector (get item key)))))
 
 ;; Check if the current time falls within the interval
 (defn is-actual [campaign]
-  (defn- get-current-date []
-    (let [current-date-time (time/now)]
-      (format/unparse
-        (format/formatters :date-time-no-ms)
-        current-date-time
-      )))
-
-  (def current-time (get-current-date))
-
-  (and
-    (> (compare current-time (campaign :starts_at)) 0)
-    (< (compare current-time (campaign :finishes_at)) 0)))
+        (let [cur-time (time/now)]
+          (and
+            (time/after?  cur-time (format/parse (campaign :starts_at)))
+            (time/before? cur-time (format/parse (campaign :finishes_at))))))
 
 ;; Get campaigns, prepare data
 (go 
   (let [response (<! (http/get "/api/campaigns" {:with-credentials? false}))]
-    (let [ 
-      { menu :menu, items :items } (:body response)
-      filterd-items (filter is-actual items)
-      active-tags (set (reduce (fn [acc camp] (concat acc (apply vector (camp :tags)))) [] filterd-items))]
+      (let [{menu :menu, items :items} (:body response)
+            filterd-items (filter is-actual items)
+            active-tags (set (reduce (fn [acc camp] (concat acc (apply vector (camp :tags)))) [] filterd-items))]
         
-      (def campaigns-all filterd-items)
-          
-      (reset! campaigns filterd-items)
-      (reset! tag-list (filter (has-tags active-tags :tag) menu)))))
+        (def campaigns-all filterd-items)
 
+        (reset! campaigns filterd-items)
+        (reset! tag-list (filter (has-tags active-tags :tag) menu)))))    
+        
 
 ;; Adds a watch function to filter-tags
 (add-watch filter-tags :logger 
   (fn [& params]
     (let [ tags-list (nth params 3) ]
+      (println @campaigns)
       (reset! campaigns (filter (has-tags (set tags-list) :tags) campaigns-all)))))
 
 ;; Components
