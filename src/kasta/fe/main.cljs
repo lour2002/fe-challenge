@@ -9,92 +9,80 @@
 
 (enable-console-print!)
 
-(def img_url "https://kasta.ua/imgw/loc/640x352/")
-(def tag_list (atom []))
+(def img-url "https://kasta.ua/imgw/loc/640x352/")
+(def tag-list (atom []))
 (def campaigns (atom []))
-(def filter_tags (atom ""))
+(def filter-tags (atom ""))
 
-;; Check if tags_list contains values from another list
-(defn has-tags [tags_list key]
+;; Check if tags-list contains values from another list
+(defn has-tags [tags-list key]
   (fn [item] 
-    (some (fn [tag] (contains? tags_list tag)) (apply vector (get item key))))
-)
+    (some (fn [tag] (contains? tags-list tag)) (apply vector (get item key)))))
+
 ;; Check if the current time falls within the interval
 (defn is-actual [campaign]
   (defn- get-current-date []
-    (let [current_date_time (time/now)]
-    (format/unparse
-      (format/formatters :date-time-no-ms)
-      current_date_time
-    ))
-  )
+    (let [current-date-time (time/now)]
+      (format/unparse
+        (format/formatters :date-time-no-ms)
+        current-date-time
+      )))
 
-  (def current_time (get-current-date))
+  (def current-time (get-current-date))
 
   (and
-    (> (compare current_time (campaign :starts_at)) 0)
-    (< (compare current_time (campaign :finishes_at)) 0))
-)
+    (> (compare current-time (campaign :starts_at)) 0)
+    (< (compare current-time (campaign :finishes_at)) 0)))
 
 ;; Get campaigns, prepare data
 (go 
   (let [response (<! (http/get "/api/campaigns" {:with-credentials? false}))]
-      (let [ 
-        { menu :menu, items :items } (:body response)
-        filterd_items (filter is-actual items)
-        active_tags (set (reduce (fn [acc camp] (concat acc (apply vector (camp :tags)))) [] filterd_items))
-      ]
-        (def campaigns_all filterd_items)
+    (let [ 
+      { menu :menu, items :items } (:body response)
+      filterd-items (filter is-actual items)
+      active-tags (set (reduce (fn [acc camp] (concat acc (apply vector (camp :tags)))) [] filterd-items))]
+        
+      (def campaigns-all filterd-items)
           
-        (reset! campaigns filterd_items)
-        (reset! tag_list (filter (has-tags active_tags :tag) menu))
-      )
-  )
-)
-;; Adds a watch function to filter_tags
-(add-watch filter_tags :logger 
+      (reset! campaigns filterd-items)
+      (reset! tag-list (filter (has-tags active-tags :tag) menu)))))
+
+
+;; Adds a watch function to filter-tags
+(add-watch filter-tags :logger 
   (fn [& params]
-    (let [ tags_list (nth params 3) ]
-      (reset! campaigns (filter (has-tags (set tags_list) :tags) campaigns_all))
-    )
-  )
-)
+    (let [ tags-list (nth params 3) ]
+      (reset! campaigns (filter (has-tags (set tags-list) :tags) campaigns-all)))))
 
 ;; Components
-(rum/defc tagItem  < rum/reactive [data]
+(rum/defc TagItem  < rum/reactive [data]
   (let [ { tag :tag, name :name } data]
-    [:div {:key (get data :url) :class ["tag-list__item" (if (= (rum/react filter_tags) tag) "--active")] :on-click #(reset! filter_tags tag)} name]
-  )
-)
+    [:div { :key (get data :url) 
+            :class ["tag-list__item" (if (= (rum/react filter-tags) tag) "--active")] 
+            :on-click #(reset! filter-tags tag)} 
+
+      name]))
 
 (rum/defc TagList < rum/reactive []
-  [
-    [:div {:class "tag-list"}
-      (mapv tagItem (rum/react tag_list))
-    ]
-  ]
-)
+  [:div {:class "tag-list"}
+    (mapv TagItem (rum/react tag-list))])
 
 
-(rum/defc campaignItem [data]
-  [:div {:class "campaigns-list__item" :key (get data :id)}
-    [:img {:src (str img_url (get data :now_image))}]
-  ]
-)
+(rum/defc СampaignItem [data]
+  [:div { :key (get data :id)
+          :class "campaigns-list__item"}
+          
+    [:img { :src (str img-url (get data :now_image))}]])
 
 (rum/defc CampaignsList < rum/reactive []
   [:div {:class "campaigns-list"} 
-    (mapv campaignItem (rum/react campaigns)) 
-  ]
-)
+    (mapv СampaignItem (rum/react campaigns))])
+
 ;; Root component
 (rum/defc Root []
   [:div {:class "container"} 
     (TagList)
-    (CampaignsList)
-  ]
-)
+    (CampaignsList)])
 
 (defn ^:export trigger-render []
-  (rum/mount (Root) (js/document.getElementById "content"))
-)
+  (rum/mount (Root) (js/document.getElementById "content")))
